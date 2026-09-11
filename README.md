@@ -47,61 +47,6 @@ client/ # React + Vite frontend
 server/ # Express + Sequelize backend
 package.json # root scripts/dependencies
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (LTS recommended)
-- npm
-- PostgreSQL
-
-### 1. Clone the repository
-
-git clone https://github.com/odomaf/TTGCollector.git
-cd TTGCollector
-
-### 2. Install dependencies
-
-Install from project root:
-
-npm install
-
-If your environment expects per-folder installs, also run:
-
-cd client && npm install
-cd ../server && npm install
-cd ..
-
-### 3. Configure environment variables
-
-Create a .env file for the backend (typically in server/) with values like:
-
-DB_NAME=your_database_name
-DB_USER=your_database_user
-DB_PASSWORD=your_database_password
-DB_HOST=localhost
-DB_PORT=5432
-SESSION_SECRET=your_session_secret
-
-Use your project’s existing environment expectations if they differ.
-
-### 4. Set up the database
-
-- Ensure PostgreSQL is running.
-- Create the database that matches DB_NAME.
-- Run schema setup from server/db/schema.sql.
-- Run seeds if desired.
-
-### 5. Run the application
-
-Use the scripts in package.json:
-
-npm run <script-name>
-
-To list available scripts:
-
-npm run
-
 ## Usage
 
 1. Sign up or log in.
@@ -112,15 +57,15 @@ npm run
 ## Roadmap / Future Improvements
 
 - Add a live deployed version
+- Add the ability to edit existing game entries
 - Add more sorting options (playtime, player count, name, etc.)
 - Add automated test coverage
 - Add pagination/virtualization for very large collections
 
 ## Author
 
-Solo project by Annetastic.
+Solo project by Anne Odom.
 
 ## License
 
-This project is currently unlicensed for public reuse.  
-Consider adding an MIT License (or your preferred license) if you plan to open source it.
+This project is not currently licensed for public reuse.
