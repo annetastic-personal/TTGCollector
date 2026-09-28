@@ -1,18 +1,4 @@
-name: Deploy To Personal Server
-
-# How to adapt this workflow for another project:
-# 1) Change trigger branch under on.push.branches.
-# 2) Change build command if needed (currently: npm run build).
-# 3) Update required secrets for target server:
-#    - SERVER_HOST
-#    - SERVER_USER
-#    - SERVER_PORT
-#    - SERVER_PATH
-#    - SSH_PRIVATE_KEY
-#    - SERVER_KNOWN_HOSTS (recommended)
-# 4) Update deployment source folder if your build output is not dist/.
-# 5) Update release retention policy by changing tail -n +6
-#    (keeps 5 releases; +11 would keep 10, etc.).
+name: Deploy to Dreamhost
 
 # Trigger on pushes to main and allow manual runs from the Actions tab.
 on:
@@ -26,37 +12,39 @@ permissions:
 
 jobs:
   deploy:
-    # Use an internal self-hosted runner that can reach the private server.
-    runs-on: [self-hosted, linux, ARM64, deploy-lan]
+    # GitHub-hosted Linux runner.
+    runs-on: ubuntu-latest
 
     steps:
       # Pull repository contents into the runner workspace.
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Install Node.js and enable npm dependency cache for faster runs.
+      # Install Node.js and enable the npm dependency cache. Set node-version
+      # to match the project's declared runtime (package.json "engines" and/or
+      # a .nvmrc file).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 20.x
           cache: npm
+          cache-dependency-path: client/package-lock.json
 
       # Install dependencies from package-lock.json for reproducible builds.
       - name: Install dependencies
-        run: npm ci
+        run: cd client && npm ci
 
-      # Build static assets into dist/.
+      # Build your app. Note the output folder; the deploy step below uses it.
       - name: Build
-        run: npm run build
+        run: cd client && npm run build   
 
-      # Load private SSH key from GitHub Secrets for server authentication.
+      # Load the deploy private key from GitHub Secrets for SSH auth.
       - name: Start SSH agent
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # Add server host key for strict host verification.
-      # Prefer pinned SERVER_KNOWN_HOSTS secret; fallback to ssh-keyscan if absent.
+      # Trust the server's host key (pinned secret, or ssh-keyscan fallback).
       - name: Add known hosts
         run: |
           mkdir -p ~/.ssh
@@ -66,11 +54,9 @@ jobs:
             ssh-keyscan -p "${{ secrets.SERVER_PORT }}" "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
           fi
 
-      # Create a timestamped release, upload build output, switch current symlink,
-      # and keep only the five most recent releases for easy rollback.
+      # Upload, install, repoint, and (for a Node service) restart. 
       - name: Deploy release
         env:
-          # Deployment target values are provided via repository secrets.
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
@@ -79,18 +65,23 @@ jobs:
           # Fail fast on errors, unset variables, or pipeline failures.
           set -euo pipefail
 
-          # Example: release-20260421194503
           RELEASE_NAME="release-$(date +%Y%m%d%H%M%S)"
           RELEASE_DIR="$SERVER_PATH/releases/$RELEASE_NAME"
 
-          # Ensure release directory exists on the server.
+          # Ensure the release directory exists on the server.
           ssh -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "mkdir -p '$RELEASE_DIR'"
 
-          # Sync built files into the new release directory.
-          rsync -az --delete -e "ssh -p $SERVER_PORT" dist/ "$SERVER_USER@$SERVER_HOST:$RELEASE_DIR/"
+          # Upload the app 
+          #   Node service → sync the whole app, skipping .git and node_modules:
+          rsync -az --delete --exclude '.git' --exclude 'node_modules' -e "ssh -p $SERVER_PORT" ./ "$SERVER_USER@$SERVER_HOST:$RELEASE_DIR/"
 
-          # Atomically point current -> new release, then prune old releases.
-          ssh -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "
-            ln -sfn '$RELEASE_DIR' '$SERVER_PATH/current' &&
-            ls -1dt '$SERVER_PATH'/releases/* | tail -n +6 | xargs -r rm -rf
-          "
+          # Node service only — install the runtime dependencies on the server.
+          # cd into the folder holding the app's package.json 
+          ssh -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "cd '$RELEASE_DIR/server' && npm ci --omit=dev"
+
+          # Repoint current 
+          #   Node service → swap the symlink AND restart the service:
+          ssh -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "ln -sfn '$RELEASE_DIR' '$SERVER_PATH/current' && sudo systemctl restart ttgcollector"
+
+          # Prune old releases (see retention note below).
+          ssh -p "$SERVER_PORT" "$SERVER_USER@$SERVER_HOST" "ls -1dt '$SERVER_PATH'/releases/* | tail -n +6 | xargs -r rm -rf"
