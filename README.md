@@ -68,4 +68,4 @@ Solo project by Anne Odom.
 
 ## License
 
-This project is not currently licensed for public reuse.
+This project is not currently licensed for public reuse. But it will eventually need to be. 
