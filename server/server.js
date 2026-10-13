@@ -10,6 +10,10 @@ const routes = require("./controllers");
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust the nginx reverse proxy so Express can tell the request was HTTPS.
+// Without this, "secure" session cookies are dropped and logins never persist.
+app.set("trust proxy", 1);
+
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
