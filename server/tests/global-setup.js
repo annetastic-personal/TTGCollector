@@ -9,15 +9,15 @@ module.exports = async () => {
   // (You can't drop a database while connected to it, so we connect elsewhere.)
   const admin = new Client({
     host: "localhost",
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
+    user: process.env.PG_ADMIN_USER,
+    password: process.env.PG_ADMIN_PASSWORD,
     database: "postgres",
   });
   await admin.connect();
 
   // Drop and recreate the test database so every run starts clean.
-  await admin.query("DROP DATABASE IF EXISTS ttgcollector_TEST");
-  await admin.query("CREATE DATABASE ttgcollector_TEST");
+  await admin.query("DROP DATABASE IF EXISTS ttgcollector_test");
+  await admin.query(`CREATE DATABASE ttgcollector_test OWNER ${process.env.PG_ADMIN_USER}`);
   await admin.end();
 
   // Build the app (this defines the models and the session table), then

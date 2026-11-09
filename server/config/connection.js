@@ -7,9 +7,9 @@ let sequelize;
 if (process.env.NODE_ENV === "test") {
   // Tests use a throwaway database so they never touch real data.
   sequelize = new Sequelize(
-    "ttgcollector_TEST",
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
+    "ttgcollector_test",
+    process.env.PG_ADMIN_USER,
+    process.env.PG_ADMIN_PASSWORD,
     {
       host: "localhost",
       dialect: "postgres",
