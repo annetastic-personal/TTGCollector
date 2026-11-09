@@ -4,7 +4,18 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 let sequelize;
 
-if (process.env.DB_URL) {
+if (process.env.NODE_ENV === "test") {
+  // Tests use a throwaway database so they never touch real data.
+  sequelize = new Sequelize(
+    "ttgcollector_test",
+    process.env.PG_ADMIN_USER,
+    process.env.PG_ADMIN_PASSWORD,
+    {
+      host: "localhost",
+      dialect: "postgres",
+    },
+  );
+} else if (process.env.DB_URL) {
   sequelize = new Sequelize(process.env.DB_URL);
 } else {
   sequelize = new Sequelize(
