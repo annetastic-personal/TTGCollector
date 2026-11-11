@@ -1,6 +1,6 @@
 const path = require("path");
 const Sequelize = require("sequelize");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 
 let sequelize;
 
@@ -13,6 +13,7 @@ if (process.env.NODE_ENV === "test") {
     {
       host: "localhost",
       dialect: "postgres",
+      logging: false, //silence SQL query logging in tests
     },
   );
 } else if (process.env.DB_URL) {
