@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../app");
 const { makeLoggedInUser } = require("./helpers/auth");
+const expectCookies = require("supertest/lib/cookies");
 
 describe("POST /api/auth/signup", () => {
   test("returns 201 with user email and username without password", async () => {
@@ -93,5 +94,38 @@ describe("POST /api/auth/login", () => {
       });
     expect(response.status).toBe(401);
     expect(response.body.message).toBe("Invalid credentials");
+  });
+});
+
+describe("POST /api/auth/logout", () => {
+  test("returns 401 with 'Not authenticated' after logout", async () => {
+
+    const { agent } = await makeLoggedInUser();
+    const response = await agent.post("/api/auth/logout");
+    const userResponse = await agent.get("/api/auth/user");
+
+    expect(response.status).toBe(200);
+    expect(response.body.message).toBe("Logged out successfully");
+    expect(userResponse.status).toBe(401);
+    expect(userResponse.body.message).toBe("Not authenticated");
+  });
+});
+
+describe("GET /api/auth/user", () => {
+  test("returns 401 when not logged in", async () => {
+    const response = await request(app).get("/api/auth/user");
+
+    expect(response.status).toBe(401);
+    expect(response.body.message).toBe("Not authenticated");
+  });
+
+  test("returns 200 with user when logged in", async () => {
+    const loggedIn = await makeLoggedInUser();
+
+    const response = await loggedIn.agent.get("/api/auth/user");
+
+    expect(response.status).toBe(200);
+    expect(response.body.user.email).toBe(loggedIn.user.email);
+    expect(response.body.user.username).toBe(loggedIn.user.username);
   });
 });
