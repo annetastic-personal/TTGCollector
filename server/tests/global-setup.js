@@ -1,7 +1,7 @@
 process.env.NODE_ENV = "test";
 
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+require("dotenv").config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 const { Client } = require("pg");
 
 module.exports = async () => {

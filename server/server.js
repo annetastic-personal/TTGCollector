@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const sequelize = require("./config/connection");
 const app = require("./app");
 

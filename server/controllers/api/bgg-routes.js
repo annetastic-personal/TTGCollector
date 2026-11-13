@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const axios = require("axios");
 const xml2js = require("xml2js");
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 
 router.get("/search/:query", async (req, res) => {
   try {
